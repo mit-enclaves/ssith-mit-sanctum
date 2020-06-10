@@ -3,6 +3,8 @@
 //
 
 #include "sodium/randombytes.h"
+#include <assert.h>
+#include <string.h>
 
 #include "AuthEnclave.h"
 namespace enclaves {
