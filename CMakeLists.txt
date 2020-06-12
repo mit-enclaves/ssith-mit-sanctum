@@ -1,16 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(enclaves C)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_FLAGS "-g -O -DCONFIGURED")
-set(CMAKE_CXX_FLAGS "-g -O -DCONFIGURED")
-
-cmake_minimum_required(VERSION 3.10)
-project(libsodium C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_FLAGS "-g -O -DCONFIGURED")
-set(CMAKE_CXX_FLAGS "-g -O -DCONFIGURED")
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_C_FLAGS "-g -O -DCONFIGURED -fsanitize=address -Wall")
+set(CMAKE_CXX_FLAGS "-g -O -DCONFIGURED -fsanitize=address -Wall")
 
 include_directories(
 src/libsodium/include
@@ -331,4 +324,5 @@ target_include_directories(sodium PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libsodium/
         )
 
 add_subdirectory(src)
+add_subdirectory(pam)
 add_subdirectory(gtest)
