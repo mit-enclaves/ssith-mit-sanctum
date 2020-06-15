@@ -54,7 +54,7 @@ int main(int argc, const char **argv)
 
     randombytes(key, sizeof(key));
     printf("uint8_t key[] = { ");
-    for (int i = 0; i < sizeof(key); i++) {
+    for (size_t i = 0; i < sizeof(key); i++) {
         if (i)
             printf(", ");
         printf("0x%0x", key[i]);

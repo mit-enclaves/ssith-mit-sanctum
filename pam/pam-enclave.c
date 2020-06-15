@@ -10,7 +10,7 @@
 #include "pam-enclave.h"
 
 static struct auth_db db;
-uint8_t pam_enclave_secret_key[crypto_secretbox_KEYBYTES];
+//uint8_t pam_enclave_secret_key[crypto_secretbox_KEYBYTES];
 
 
 void enclave_entry() {
