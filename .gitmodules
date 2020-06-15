@@ -4,3 +4,6 @@
 [submodule "gtest"]
 	path = gtest
 	url = https://github.com/google/googletest
+[submodule "security_monitor"]
+	path = security_monitor
+	url = git@github.com:mit-enclaves/security_monitor
