@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 project(enclaves C)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_C_FLAGS "-g -O -DCONFIGURED -fsanitize=address -Wall")
-set(CMAKE_CXX_FLAGS "-g -O -DCONFIGURED -fsanitize=address -Wall")
+set(CMAKE_C_FLAGS "-Os -DCONFIGURED -Wall")
+set(CMAKE_CXX_FLAGS "-Os -DCONFIGURED -Wall")
 
 include_directories(
 src/libsodium/include
@@ -322,6 +322,47 @@ libsodium/src/libsodium/crypto_core/curve25519/ref10/base.h
 )
 target_include_directories(sodium PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libsodium/src/libsodium/include"
         )
+
+add_library(sm_api
+	security_monitor/src/api/enclave_create.c
+	security_monitor/src/api/enclave_delete.c
+	security_monitor/src/api/enclave_enter.c
+	security_monitor/src/api/enclave_exit.c
+	security_monitor/src/api/enclave_init.c
+	security_monitor/src/api/enclave_load_handler.c
+	security_monitor/src/api/enclave_load_page.c
+	security_monitor/src/api/enclave_load_page_table.c
+	security_monitor/src/api/enclave_metadata_pages.c
+	security_monitor/src/api/get_attestation_key.c
+	security_monitor/src/api/get_public_field.c
+	security_monitor/src/api/mail_accept.c
+	security_monitor/src/api/mail_receive.c
+	security_monitor/src/api/mail_send.c
+	security_monitor/src/api/region_assign.c
+	security_monitor/src/api/region_block.c
+	security_monitor/src/api/region_check_owned.c
+	security_monitor/src/api/region_free.c
+	security_monitor/src/api/region_metadata_create.c
+	security_monitor/src/api/region_metadata_pages.c
+	security_monitor/src/api/region_metadata_start.c
+	security_monitor/src/api/region_owner.c
+	security_monitor/src/api/region_state.c
+	security_monitor/src/api/thread_delete.c
+	security_monitor/src/api/thread_load.c
+	security_monitor/src/api/thread_metadata_pages.c
+	security_monitor/api/api_enclave.h
+	security_monitor/api/api.h
+	security_monitor/api/api_types.h
+	security_monitor/api/api_untrusted.h
+	security_monitor/api/api_util.h
+	security_monitor/api/sbi_kernel.h
+	security_monitor/src/sm.h
+	)
+target_include_directories(sm_api PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/security_monitor/api"
+	"${CMAKE_CURRENT_SOURCE_DIR}/security_monitor/src"
+	"${CMAKE_CURRENT_SOURCE_DIR}/security_monitor/platform"
+	"${CMAKE_CURRENT_SOURCE_DIR}/security_monitor/src/crypto/ed25519"
+)
 
 add_subdirectory(src)
 add_subdirectory(pam)
