@@ -10,12 +10,12 @@ target_include_directories(enclaves PRIVATE
         )
 
 add_executable(encrypt-enclave encrypt-enclave.cpp)
-target_link_libraries(encrypt-enclave sodium)
+target_link_libraries(encrypt-enclave sodium_random sodium)
 target_include_directories(encrypt-enclave PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../libsodium/src/libsodium/include"
         )
 add_executable(test-enclaves test-enclaves.cpp)
-target_link_libraries(test-enclaves enclaves sodium gtest_main)
+target_link_libraries(test-enclaves enclaves sodium_random sodium gtest_main)
 target_include_directories(test-enclaves PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../gtest/googletest/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../libsodium/src/libsodium/include"

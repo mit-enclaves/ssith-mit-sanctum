@@ -35,5 +35,4 @@ int encrypt_db(const struct auth_db *db, struct enclave_params *params);
 int decrypt_db(struct auth_db *db, const struct enclave_params *params);
 
 void enclave_main(struct enclave_params *params);
-void sm_exit_enclave();
 #endif //PAM_ENCLAVE_H
