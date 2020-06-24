@@ -7,3 +7,6 @@
 [submodule "security_monitor"]
 	path = security_monitor
 	url = git@github.com:mit-enclaves/security_monitor
+[submodule "aes-enclave"]
+	path = aes-enclave
+	url = git@github.com:mit-enclaves/AES_enclave.git
