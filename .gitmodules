@@ -16,3 +16,6 @@
 [submodule "pam-enclave"]
 	path = pam-enclave
 	url = https://github.com/mit-enclaves/ssith-pam-enclave.git
+[submodule "ssith-aws-fpga"]
+	path = ssith-aws-fpga
+	url = https://github.com/acceleratedtech/ssith-aws-fpga
