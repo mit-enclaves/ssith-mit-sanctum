@@ -9,7 +9,7 @@
 	url = git@github.com:mit-enclaves/security_monitor
 [submodule "aes-enclave"]
 	path = aes-enclave
-	url = git@github.com:mit-enclaves/AES_enclave.git
+	url = https://github.com/mit-enclaves/AES_enclave.git
 [submodule "linux_enclaves"]
 	path = linux_enclaves
 	url = http://github.com/mit-enclaves/linux
