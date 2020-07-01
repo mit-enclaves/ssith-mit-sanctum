@@ -341,5 +341,5 @@ add_library(sm_clib
 	)
 
 add_subdirectory(src)
-add_subdirectory(pam)
+# add_subdirectory(pam)
 add_subdirectory(gtest)
