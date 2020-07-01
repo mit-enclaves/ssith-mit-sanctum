@@ -13,3 +13,6 @@
 [submodule "linux_enclaves"]
 	path = linux_enclaves
 	url = http://github.com/mit-enclaves/linux
+[submodule "pam-enclave"]
+	path = pam-enclave
+	url = https://github.com/mit-enclaves/ssith-pam-enclave.git
