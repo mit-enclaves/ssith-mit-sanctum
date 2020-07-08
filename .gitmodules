@@ -19,3 +19,6 @@
 [submodule "ssith-aws-fpga"]
 	path = ssith-aws-fpga
 	url = https://github.com/acceleratedtech/ssith-aws-fpga
+[submodule "aws-fpga"]
+	path = aws-fpga
+	url = https://github.com/aws/aws-fpga

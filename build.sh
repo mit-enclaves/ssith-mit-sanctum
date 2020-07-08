@@ -9,6 +9,11 @@ rebuild=yes
 
 TOP_DIR=$PWD
 
+pushd aws-fpga
+. sdk_setup.sh
+sudo chmod u+s /usr/local/bin/fpga-local-cmd
+popd
+
 pushd ssith-aws-fpga;
 mkdir -p build
 dtc -I dts -O dtb -o build/devicetree-mit.dtb src/dts/devicetree-mit.dts
