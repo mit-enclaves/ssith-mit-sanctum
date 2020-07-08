@@ -1,6 +1,7 @@
 #!/bin/bash
 
 AGFI=agfi-07db500659138593b CLOCKPARAM="-a 125"
+ROOTFS_IMG=~/debian-2020-07-01a.img
 
 sudo modprobe portalmem
 sudo rmmod pcieportal
