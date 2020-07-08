@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ROOTFS_IMG=~/debian-2020-07-01a.img
+## SM_DEFINES=-DENFORCE_ENCLAVE_MEASUREMENT
 
 JOBS=8
 
@@ -15,7 +16,7 @@ dtc -I dts -O dtb -o build/devicetree.dtb src/dts/devicetree.dts
 cd build; cmake -DFPGA=1 .. && make
 popd
 
-(cd security_monitor; rm -v build/sm.*; make sm all)
+(cd security_monitor; rm -v build/sm.*; make SM_DEFINES="${SM_DEFINES}" sm all)
 #(cd linux_enclaves/build_linux/riscv-linux/; make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j${JOBS} clean)
 (cd linux_enclaves; make -j${JOBS} SANCTUM_QEMU=qemu SM_BUILD_DIR=../security_monitor/build build_linux)
 (cd linux_enclaves; make -j${JOBS} SANCTUM_QEMU=qemu SM_BUILD_DIR=../security_monitor/build test_linux)
