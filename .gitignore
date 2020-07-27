@@ -1,2 +1,5 @@
 *~
 key.c
+aeskey.*
+*.enc
+build
