@@ -28,8 +28,9 @@ popd
 
 rm -f enclave.enc aeskey.bin
 (cd pam-enclave; make)
+(cd aes-enclave; make)
 (cd build; cmake .. && make -j${JOBS})
-./build/src/encrypt-enclave ./pam-enclave/build/enclave.bin enclave.enc
+./build/src/encrypt-enclave -n -k aeskey.bin ./pam-enclave/build/enclave.bin enclave.enc
 riscv64-unknown-linux-gnu-objcopy -B riscv -I binary -O elf64-littleriscv ./aeskey.bin aeskey.o
 riscv64-unknown-linux-gnu-ld -T ./scripts/aeskey.lds -o aeskey.elf aeskey.o
 riscv64-unknown-linux-gnu-objdump -h aeskey.elf
@@ -48,8 +49,8 @@ make -C ./pam-enclave/ all || exit
 ##./build/src/encrypt-enclave pam-enclave.bin pam-enclave.enc
 ##./build/pam/pam-create-db
 
-./build/src/encrypt-enclave ./pam-enclave/build/pam-enclave.bin pam-enclave.enc
-./build/src/encrypt-enclave ./aes-enclave/build/aes-enclave.bin aes-enclave.enc
+./build/src/encrypt-enclave --measurement=pam-measurement.txt -k aeskey.bin -o pam-enclave.enc ./pam-enclave/build/pam-enclave.bin
+./build/src/encrypt-enclave --measurement=aes-measurement.txt --key=aeskey.bin -o aes-enclave.enc ./aes-enclave/build/aes-enclave.bin
 
 sudo mount -o loop ${ROOTFS_IMG} /mnt
 sudo mkdir -p /mnt/ssith

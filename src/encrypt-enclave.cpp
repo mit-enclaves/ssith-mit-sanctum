@@ -4,6 +4,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,14 +19,73 @@
 
 const int measurement_BYTES = 64;
 
-int main(int argc, const char **argv)
+const struct option long_options[] = {
+    { "key", required_argument, 0, 'k' },
+    { "measurement", required_argument, 0, 'm' },
+    { "newkey", no_argument, 0, 'n' },
+    { "output", required_argument, 0, 'o' },
+    { 0,         0,                 0, 0 }
+};
+
+void usage(const char *name)
 {
-    const char *filename = argv[1];
-    const char *cipherfilename = argv[2];
-    if (!filename || !cipherfilename) {
-        fprintf(stderr, "Usage: %s plaintext ciphertext", argv[0]);
+    fprintf(stderr, "Usage: %s [options] enclavefilename [cipherfilename]\r\n", name);
+    for (const struct option *option = long_options; option->name != 0; option++) {
+        if (option->has_arg == required_argument) {
+            fprintf(stderr, "        --%s arg\r\n", option->name);
+        } else if (option->has_arg == optional_argument) {
+            fprintf(stderr, "        --%s [arg]\r\n", option->name);
+        } else {
+            fprintf(stderr, "        --%s\r\n", option->name);
+        }
+    }
+}
+
+int main(int argc, char * const *argv)
+{
+
+    const char *cipher_filename = 0;
+    const char *key_filename = 0;
+    const char *measurement_filename = 0;
+    bool newkey = false;
+
+    while (1) {
+        int option_index = optind ? optind : 1;
+        char c = getopt_long(argc, argv, "k:o:n",
+                             long_options, &option_index);
+        if (c == -1)
+            break;
+
+        switch (c) {
+        case 'k':
+            key_filename = optarg;
+            break;
+        case 'm':
+            measurement_filename = optarg;
+            break;
+        case 'n':
+            newkey = true;
+            break;
+        case 'o':
+            cipher_filename = optarg;
+            break;
+        default:
+            fprintf(stderr, "Unknown argument: %d index %d\n", c, option_index);
+            usage(argv[0]);
+            return -1;
+        }
+    }
+
+    if (!cipher_filename) {
+	cipher_filename = argv[optind+1];
+    }
+    fprintf(stderr, "optind=%d filename=%s key_filename=%s\n", optind, argv[optind], key_filename);
+    const char *filename = argv[optind];
+    if (!filename || !cipher_filename) {
+        usage(argv[0]);
         return -1;
     }
+
     struct stat statbuf;
     int result = lstat(filename, &statbuf);
     if (result != 0) {
@@ -42,15 +102,34 @@ int main(int argc, const char **argv)
 
     printf("plaintext %d blocks %d/%x bytes ciphertext %d blocks %d/%x bytes\n", num_blocks, plaintextlen, plaintextlen, cipherlen / 4096, cipherlen, cipherlen);
 
-    uint8_t key[crypto_stream_aes128ctr_KEYBYTES] = { 0xfc, 0x8e, 0x3f, 0x47, 0xd2, 0x27, 0x58, 0xfc, 0xe7, 0x30, 0x82, 0x6a, 0xb, 0xde, 0x92, 0xaf};
-    //randombytes(key, sizeof(key));
+    uint8_t key[crypto_stream_aes128ctr_KEYBYTES] = {0};
+    if (newkey) {
+        randombytes(key, sizeof(key));
+        int key_fd = open(key_filename, O_RDWR|O_CREAT|O_TRUNC, 0600);
+        if (write(key_fd, key, sizeof(key)) < 0) {
+            fprintf(stderr, "Error writing key: %s\n", strerror(errno));
+        }
+        close(key_fd);
+    } else {
+        int key_fd = open(key_filename, O_RDONLY);
+        if (read(key_fd, key, sizeof(key)) < 0) {
+            fprintf(stderr, "Error reading key from %s: %s\n", key_filename, strerror(errno));
+        }
+        if ((key[0] == 0x7f) && (strncmp((const char *)key + 1, "ELF", 3) == 0)) {
+            lseek(key_fd, 0x160, SEEK_SET);
+            if (read(key_fd, key, sizeof(key)) < 0) {
+                fprintf(stderr, "Error reading key: %s\n", strerror(errno));
+            }
+        }
+        close(key_fd);
+    }
     printf("uint8_t key[] = { ");
     for (size_t i = 0; i < sizeof(key); i++) {
         if (i)
             printf(", ");
         printf("0x%0x", key[i]);
     }
-    printf("};\n");
+    printf(" };\n");
 
     int bytes_to_read = statbuf.st_size;
     int total_bytes_read = 0;
@@ -107,32 +186,59 @@ int main(int argc, const char **argv)
         crypto_stream_aes128ctr_xor(ciphertext + i * 4096, plaintext + i * 4096, 4096, nonce, key);
 
 #if COMPUTE_MEASUREMENT
-	// update the measurement with this page
-	crypto_hash_sha512_update(&hash_context, &virtual_addr, sizeof(virtual_addr));
-	crypto_hash_sha512_update(&hash_context, &acl, sizeof(acl));
-	crypto_hash_sha512_update(&hash_context, (const void *) phys_addr, PAGE_SIZE);
+        // update the measurement with this page
+        crypto_hash_sha512_update(&hash_context, &virtual_addr, sizeof(virtual_addr));
+        crypto_hash_sha512_update(&hash_context, &acl, sizeof(acl));
+        crypto_hash_sha512_update(&hash_context, (const void *) phys_addr, PAGE_SIZE);
 #endif
 
     }
 
 #if COMPUTE_MEASUREMENT
-  // thread_load
-  crypto_hash_sha512_update(&hash_context, &entry_pc, sizeof(entry_pc));
-  crypto_hash_sha512_update(&hash_context, &entry_stack, sizeof(entry_stack));
-  crypto_hash_sha512_update(&hash_context, &fault_pc, sizeof(fault_pc));
-  crypto_hash_sha512_update(&hash_context, &fault_stack, sizeof(fault_stack));
-  crypto_hash_sha512_update(&hash_context, &timer_limit, sizeof(timer_limit));
+    // thread_load
+    crypto_hash_sha512_update(&hash_context, &entry_pc, sizeof(entry_pc));
+    crypto_hash_sha512_update(&hash_context, &entry_stack, sizeof(entry_stack));
+    crypto_hash_sha512_update(&hash_context, &fault_pc, sizeof(fault_pc));
+    crypto_hash_sha512_update(&hash_context, &fault_stack, sizeof(fault_stack));
+    crypto_hash_sha512_update(&hash_context, &timer_limit, sizeof(timer_limit));
 #endif
 
-    // magic value, should come from a file
-    uint8_t measurement[] = {
-0x00000022, 0x000000de, 0x000000bc, 0x000000e7, 0x00000076, 0x00000011, 0x0000005e, 0x000000fa, 0x0000006d, 0x000000de, 0x0000000b, 0x000000e2, 0x000000ce, 0x000000f0, 0x0000003f, 0x00000012, 0x00000011, 0x00000002, 0x00000018, 0x0000005c, 0x000000b1, 0x000000ca, 0x000000bd, 0x00000047, 0x00000071, 0x000000d1, 0x0000005b, 0x0000002c, 0x000000af, 0x000000c6, 0x00000088, 0x00000005, 0x000000c5, 0x000000a7, 0x000000e7, 0x00000053, 0x000000ac, 0x000000d3, 0x000000f6, 0x0000005d, 0x00000034, 0x00000079, 0x00000051, 0x000000c2, 0x00000054, 0x000000e3, 0x00000064, 0x00000088, 0x000000b3, 0x0000000a, 0x000000fa, 0x00000078, 0x00000022, 0x00000016, 0x0000006c, 0x000000a4, 0x000000f1, 0x000000a8, 0x00000004, 0x000000c9, 0x000000de, 0x00000064, 0x00000053, 0x000000d1
-    };
+    uint8_t measurement[64] = { 0 };
+    if (measurement_filename) {
+	FILE *mfile = fopen(measurement_filename, "r");
+	if (!mfile) {
+	    fprintf(stderr, "Error opening measurement %s: %s\n", measurement_filename, strerror(errno));
+	    return -errno;
+	}
+	char buffer[1024];
+	char *line = fgets(buffer, sizeof(buffer), mfile);
+	for (size_t i = 0; i < sizeof(measurement); i++) {
+	    char *endptr = 0;
+	    uint32_t value = strtoul(line, &endptr, 0);
+	    measurement[i] = value;
+	    if (endptr) {
+		line = endptr;
+		if (line[0] == ',')
+		    line++;
+		if (line[0] == ' ')
+		    line++;
+	    } else {
+		break;
+	    }
+	}
+	fclose(mfile);
+	fprintf(stderr, "measurement[] = { ");
+	for (size_t i = 0; i < sizeof(measurement); i++) {
+	    fprintf(stderr, "%s0x%02x", (i ? ", " : ""), measurement[i]);
+	}
+	fprintf(stderr, "}\n");
+    }
+
     memcpy(ciphertext + num_blocks * 4096 + num_blocks * crypto_stream_aes128ctr_NONCEBYTES, measurement, sizeof(measurement));
 
     int bytes_to_write = cipherlen;
     int total_bytes_written = 0;
-    fd = open(cipherfilename, O_RDWR|O_CREAT|O_TRUNC, 0666);
+    fd = open(cipher_filename, O_RDWR|O_CREAT|O_TRUNC, 0666);
     while (bytes_to_write > 0) {
         int bytes_written = write(fd, ciphertext + total_bytes_written, bytes_to_write);
         if (bytes_written < 0) {
@@ -146,7 +252,7 @@ int main(int argc, const char **argv)
     // AES KEY goes at 80000160
     fd = open("aeskey.bin", O_RDWR|O_CREAT, 0666);
     if ((total_bytes_written = write(fd, key, crypto_stream_aes128ctr_KEYBYTES)) != crypto_stream_aes128ctr_KEYBYTES) {
-      fprintf(stderr, "Failed to write %d bytes (wrote %d) to aeskey.bin: %s\n", crypto_stream_aes128ctr_KEYBYTES, total_bytes_written, strerror(errno));
+        fprintf(stderr, "Failed to write %d bytes (wrote %d) to aeskey.bin: %s\n", crypto_stream_aes128ctr_KEYBYTES, total_bytes_written, strerror(errno));
     }
     close(fd);
     fprintf(stderr, "Wrote aeskey.bin (%d bytes)\n", crypto_stream_aes128ctr_KEYBYTES);
